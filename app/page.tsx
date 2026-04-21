@@ -1,40 +1,128 @@
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
-import { connection } from "next/server";
-import { Suspense } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-async function MembershipPlansList() {
-  await connection();
+const highlights = [
+  "Membership submission for new and renewing families",
+  "Google sign-in or magic link authentication",
+  "Manual payment confirmation through Zelle, check, or cash",
+];
 
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  const { data: plans } = await supabase
-    .from("membership_plans")
-    .select("code,name,max_additional_members,price_cents")
-    .eq("is_active", true)
-    .order("code");
-
-  return (
-    <ul className="space-y-3">
-      {plans?.map((plan) => (
-        <li key={plan.code}>
-          <div className="font-medium">{plan.name}</div>
-          <div className="text-sm text-muted-foreground">
-            {plan.code} · up to {plan.max_additional_members} additional member
-            {plan.max_additional_members === 1 ? "" : "s"}
-            {plan.price_cents == null ? " · pricing TBD" : ` · $${(plan.price_cents / 100).toFixed(2)}`}
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
+const steps = [
+  "Visit the membership page and review the options.",
+  "Sign in with Google or a magic link.",
+  "Complete your profile and submit the membership for review.",
+  "An officer confirms payment and activates the membership.",
+];
 export default function Page() {
   return (
-    <Suspense fallback={<p>Loading membership plans...</p>}>
-      <MembershipPlansList />
-    </Suspense>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(204,169,114,0.16),_transparent_28%),linear-gradient(180deg,_#fdfaf5_0%,_#fff_42%,_#f7f0e2_100%)] px-4 py-10 text-slate-900 md:px-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
+        <header className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white/85 p-4 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+              Palm Beach Indian Association
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+              Community membership made simple.
+            </h1>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild>
+              <Link href="/membership">Join / Renew</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/login">Sign in</Link>
+            </Button>
+          </div>
+        </header>
+
+        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+          <div className="space-y-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Membership submission, not checkout
+            </p>
+            <h2 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
+              The PBIA portal for joining, renewing, and keeping family records up to date.
+            </h2>
+            <p className="max-w-2xl text-base leading-7 text-slate-600">
+              Members sign in, complete their profile, choose Single, Couple, or Family, and submit payment details for an officer to review. The association still confirms payments manually, so this flow stays simple while the app gets the right records in place.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <Link href="/membership">Explore membership options</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/dashboard">Go to dashboard</Link>
+              </Button>
+            </div>
+          </div>
+
+          <Card className="border-slate-200/80 bg-white/90 shadow-sm">
+            <CardHeader>
+              <CardTitle>What members do here</CardTitle>
+              <CardDescription>
+                The experience is tuned for a community association, not an ecommerce checkout.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-600">
+              {highlights.map((highlight) => (
+                <div key={highlight} className="rounded-2xl bg-slate-50 px-4 py-3">
+                  {highlight}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {steps.map((step, index) => (
+            <Card key={step} className="border-slate-200/80 bg-white/90 shadow-sm">
+              <CardHeader>
+                <CardDescription>Step {index + 1}</CardDescription>
+                <CardTitle>{step}</CardTitle>
+              </CardHeader>
+            </Card>
+          ))}
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-3">
+          <Card className="border-slate-200/80 bg-white/90 shadow-sm lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Membership options</CardTitle>
+              <CardDescription>
+                Single, Couple, and Family memberships are available through the application flow.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-3">
+              {[
+                ["Single", "No additional household members"],
+                ["Couple", "Exactly one extra member"],
+                ["Family", "Up to six extra members"],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="font-medium text-slate-900">{title}</div>
+                  <div className="mt-2 text-sm text-slate-600">{body}</div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200/80 bg-amber-50/80 shadow-sm">
+            <CardHeader>
+              <CardTitle>Payments</CardTitle>
+              <CardDescription>
+                Zelle, check, and cash are supported while the association confirms payment manually.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-700">
+              <div>Zelle QR placeholder will appear on the membership page.</div>
+              <div>Check payments can include the member name and membership year.</div>
+              <div>Cash payments are recorded by an officer after collection.</div>
+            </CardContent>
+          </Card>
+        </section>
+      </div>
+    </main>
   );
 }

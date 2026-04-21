@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { PrivateShell } from "@/components/private-shell";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { Suspense } from "react";
 
-export default async function AdminLayout({
+async function AdminContent({
   children,
 }: {
   children: React.ReactNode;
@@ -23,4 +24,16 @@ export default async function AdminLayout({
   }
 
   return <PrivateShell isOfficer>{children}</PrivateShell>;
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-slate-600">Loading admin review...</div>}>
+      <AdminContent>{children}</AdminContent>
+    </Suspense>
+  );
 }

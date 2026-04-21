@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { PrivateShell } from "@/components/private-shell";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { Suspense } from "react";
 
-export default async function DashboardLayout({
+async function DashboardContent({
   children,
 }: {
   children: React.ReactNode;
@@ -19,4 +20,16 @@ export default async function DashboardLayout({
   const { data: officer } = await supabase.rpc("is_officer");
 
   return <PrivateShell isOfficer={Boolean(officer)}>{children}</PrivateShell>;
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-slate-600">Loading dashboard...</div>}>
+      <DashboardContent>{children}</DashboardContent>
+    </Suspense>
+  );
 }

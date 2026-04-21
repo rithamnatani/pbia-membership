@@ -15,8 +15,8 @@ type Membership = {
   payment_reference: string | null;
   submitted_at: string | null;
   approved_at: string | null;
-  profiles: { first_name: string | null; last_name: string | null; email: string } | null;
-  membership_plans: { name: string; code: string } | null;
+  profiles: { first_name: string | null; last_name: string | null; email: string }[] | null;
+  membership_plans: { name: string; code: string }[] | null;
 };
 
 export function AdminReviewList({
@@ -106,18 +106,27 @@ export function AdminReviewList({
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <div className="grid gap-4">
         {memberships.map((membership) => (
+          (() => {
+            const profile = Array.isArray(membership.profiles)
+              ? membership.profiles[0]
+              : membership.profiles;
+            const plan = Array.isArray(membership.membership_plans)
+              ? membership.membership_plans[0]
+              : membership.membership_plans;
+
+            return (
           <Card key={membership.id} className="border-slate-200/80 bg-white/95 shadow-sm">
             <CardHeader>
               <CardTitle>
-                {membership.profiles?.first_name ?? "Member"} {membership.profiles?.last_name ?? ""}
+                {profile?.first_name ?? "Member"} {profile?.last_name ?? ""}
               </CardTitle>
               <CardDescription>
-                {membership.membership_plans?.name ?? membership.payment_method} · {membership.membership_year}
+                {plan?.name ?? membership.payment_method} · {membership.membership_year}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-slate-600">
               <div className="grid gap-2 md:grid-cols-2">
-                <Meta label="Member email" value={membership.profiles?.email ?? "Unknown"} />
+                <Meta label="Member email" value={profile?.email ?? "Unknown"} />
                 <Meta label="Status" value={`${membership.status} / ${membership.payment_status}`} />
                 <Meta label="Payment method" value={membership.payment_method} />
                 <Meta label="Reference" value={membership.payment_reference ?? membership.id} />
@@ -141,6 +150,8 @@ export function AdminReviewList({
               </div>
             </CardContent>
           </Card>
+            );
+          })()
         ))}
       </div>
     </div>

@@ -1,0 +1,118 @@
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { createClient } from "@/lib/supabase/server";
+import { connection } from "next/server";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
+
+async function DashboardContent() {
+  await connection();
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+
+  if (!data?.claims) {
+    redirect("/login");
+  }
+
+  const userId = data.claims.sub;
+
+  const [{ data: profile }, { data: memberships }, { count }] = await Promise.all([
+    supabase.from("profiles").select("first_name,last_name,email").eq("id", userId).maybeSingle(),
+    supabase
+      .from("memberships")
+      .select("id,status,plan_code,membership_year,payment_status,submitted_at")
+      .eq("primary_user_id", userId)
+      .order("submitted_at", { ascending: false })
+      .limit(1),
+    supabase
+      .from("memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("primary_user_id", userId),
+  ]);
+
+  const latestMembership = memberships?.[0];
+  const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || data.claims.email || "Member";
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-3">
+      <Card className="border-slate-200/80 bg-white/90 shadow-sm lg:col-span-2">
+        <CardHeader>
+          <CardDescription>Welcome back</CardDescription>
+          <CardTitle>{displayName}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <Stat label="Memberships" value={String(count ?? 0)} />
+          <Stat label="Latest status" value={latestMembership ? `${latestMembership.status} / ${latestMembership.payment_status}` : "No submission yet"} />
+          <Stat label="Profile" value={profile ? "Started" : "Needs attention"} />
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200/80 bg-amber-50/80 shadow-sm">
+        <CardHeader>
+          <CardTitle>Next step</CardTitle>
+          <CardDescription>
+            Finish your profile or start a new membership submission.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button asChild className="w-full">
+            <Link href="/dashboard/profile">Update profile</Link>
+          </Button>
+          <Button asChild className="w-full" variant="outline">
+            <Link href="/dashboard/membership/new">New membership</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200/80 bg-white/90 shadow-sm lg:col-span-3">
+        <CardHeader>
+          <CardTitle>Latest submission</CardTitle>
+          <CardDescription>
+            Track the current membership status and payment progress.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {latestMembership ? (
+            <div className="grid gap-4 md:grid-cols-4">
+              <MiniStat label="Plan" value={latestMembership.plan_code} />
+              <MiniStat label="Year" value={latestMembership.membership_year} />
+              <MiniStat label="Status" value={latestMembership.status} />
+              <MiniStat label="Payment" value={latestMembership.payment_status} />
+            </div>
+          ) : (
+            <p className="text-sm text-slate-600">
+              No membership has been submitted yet. Start one when you are ready.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-slate-600">Loading dashboard...</div>}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-slate-50 px-4 py-4">
+      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
+      <div className="mt-2 text-lg font-semibold text-slate-900">{value}</div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
+      <div className="mt-2 font-medium text-slate-900">{value}</div>
+    </div>
+  );
+}
