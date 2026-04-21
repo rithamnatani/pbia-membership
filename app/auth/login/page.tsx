@@ -1,4 +1,8 @@
-import { LoginForm } from "@/components/login-form";
+import { redirect } from "next/navigation";
+
+export default function Page() {
+  redirect("/login");
+}import { LoginForm } from "@/components/login-form";
 
 export default function Page() {
   return (

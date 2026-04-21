@@ -99,6 +99,11 @@ create table if not exists public.payment_records (
   constraint payment_records_amount_cents_check check (amount_cents is null or amount_cents >= 0)
 );
 
+create table if not exists public.officer_accounts (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -143,6 +148,20 @@ begin
 
   return new;
 end;
+$$;
+
+create or replace function public.is_officer()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.officer_accounts officer_accounts
+    where officer_accounts.user_id = auth.uid()
+  );
 $$;
 
 create or replace function public.enforce_household_member_limit()
@@ -258,6 +277,7 @@ alter table public.profiles enable row level security;
 alter table public.memberships enable row level security;
 alter table public.household_members enable row level security;
 alter table public.payment_records enable row level security;
+alter table public.officer_accounts enable row level security;
 
 drop policy if exists "Public can read active membership plans" on public.membership_plans;
 create policy "Public can read active membership plans"
@@ -265,11 +285,17 @@ on public.membership_plans
 for select
 using (is_active);
 
+drop policy if exists "Officers can view officer accounts" on public.officer_accounts;
+create policy "Officers can view officer accounts"
+on public.officer_accounts
+for select
+using (user_id = auth.uid() or public.is_officer());
+
 drop policy if exists "Users can read own profile" on public.profiles;
 create policy "Users can read own profile"
 on public.profiles
 for select
-using (id = auth.uid());
+using (id = auth.uid() or public.is_officer());
 
 drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
@@ -278,11 +304,18 @@ for update
 using (id = auth.uid())
 with check (id = auth.uid());
 
+drop policy if exists "Officers can update profiles" on public.profiles;
+create policy "Officers can update profiles"
+on public.profiles
+for update
+using (public.is_officer())
+with check (public.is_officer());
+
 drop policy if exists "Users can read own memberships" on public.memberships;
 create policy "Users can read own memberships"
 on public.memberships
 for select
-using (primary_user_id = auth.uid());
+using (primary_user_id = auth.uid() or public.is_officer());
 
 drop policy if exists "Users can create own memberships" on public.memberships;
 create policy "Users can create own memberships"
@@ -290,12 +323,25 @@ on public.memberships
 for insert
 with check (primary_user_id = auth.uid());
 
+drop policy if exists "Officers can insert memberships" on public.memberships;
+create policy "Officers can insert memberships"
+on public.memberships
+for insert
+with check (public.is_officer());
+
 drop policy if exists "Users can update own memberships" on public.memberships;
 create policy "Users can update own memberships"
 on public.memberships
 for update
 using (primary_user_id = auth.uid())
 with check (primary_user_id = auth.uid());
+
+drop policy if exists "Officers can update memberships" on public.memberships;
+create policy "Officers can update memberships"
+on public.memberships
+for update
+using (public.is_officer())
+with check (public.is_officer());
 
 drop policy if exists "Users can read own household members" on public.household_members;
 create policy "Users can read own household members"
@@ -306,7 +352,7 @@ using (
     select 1
     from public.memberships memberships
     where memberships.id = household_members.membership_id
-      and memberships.primary_user_id = auth.uid()
+      and (memberships.primary_user_id = auth.uid() or public.is_officer())
   )
 );
 
@@ -319,7 +365,7 @@ with check (
     select 1
     from public.memberships memberships
     where memberships.id = household_members.membership_id
-      and memberships.primary_user_id = auth.uid()
+      and (memberships.primary_user_id = auth.uid() or public.is_officer())
   )
 );
 
@@ -340,7 +386,7 @@ with check (
     select 1
     from public.memberships memberships
     where memberships.id = household_members.membership_id
-      and memberships.primary_user_id = auth.uid()
+      and (memberships.primary_user_id = auth.uid() or public.is_officer())
   )
 );
 
@@ -353,9 +399,16 @@ using (
     select 1
     from public.memberships memberships
     where memberships.id = household_members.membership_id
-      and memberships.primary_user_id = auth.uid()
+      and (memberships.primary_user_id = auth.uid() or public.is_officer())
   )
 );
+
+drop policy if exists "Officers can manage household members" on public.household_members;
+create policy "Officers can manage household members"
+on public.household_members
+for all
+using (public.is_officer())
+with check (public.is_officer());
 
 drop policy if exists "Users can read own payment records" on public.payment_records;
 create policy "Users can read own payment records"
@@ -366,9 +419,16 @@ using (
     select 1
     from public.memberships memberships
     where memberships.id = payment_records.membership_id
-      and memberships.primary_user_id = auth.uid()
+      and (memberships.primary_user_id = auth.uid() or public.is_officer())
   )
 );
+
+drop policy if exists "Officers can manage payment records" on public.payment_records;
+create policy "Officers can manage payment records"
+on public.payment_records
+for all
+using (public.is_officer())
+with check (public.is_officer());
 
 insert into public.membership_plans (code, name, max_additional_members, price_cents, is_active)
 values
