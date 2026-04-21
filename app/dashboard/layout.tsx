@@ -28,7 +28,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-slate-600">Loading dashboard...</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div>}>
       <DashboardContent>{children}</DashboardContent>
     </Suspense>
   );

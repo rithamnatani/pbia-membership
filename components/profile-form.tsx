@@ -92,7 +92,7 @@ export function ProfileForm({
   };
 
   return (
-    <Card className="border-slate-200/80 bg-white/90 shadow-sm">
+    <Card className="border-border/80 bg-card/90 shadow-sm">
       <CardHeader>
         <CardTitle>Primary member profile</CardTitle>
         <CardDescription>

@@ -32,7 +32,7 @@ async function ProfileContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-slate-600">Loading profile...</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading profile...</div>}>
       <ProfileContent />
     </Suspense>
   );

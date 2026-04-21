@@ -56,12 +56,10 @@ function createEmptyHouseholdMember(): HouseholdDraft {
 }
 
 export function MembershipApplicationForm({
-  userId,
   initialProfile,
   plans,
   currentMembershipYear,
 }: {
-  userId: string;
   initialProfile: Partial<ProfileDraft> | null;
   plans: Plan[];
   currentMembershipYear: string;
@@ -82,7 +80,7 @@ export function MembershipApplicationForm({
     postal_code: initialProfile?.postal_code ?? "",
     occupation: initialProfile?.occupation ?? "",
   });
-  const [planCode, setPlanCode] = useState<Plan["code"]>("single");
+  const [planCode, setPlanCode] = useState<Plan["code"]>(plans[0]?.code ?? "single");
   const [paymentMethod, setPaymentMethod] = useState<(typeof paymentMethods)[number]["value"]>("zelle");
   const [paymentReference, setPaymentReference] = useState("");
   const [householdMembers, setHouseholdMembers] = useState<HouseholdDraft[]>(
@@ -120,44 +118,6 @@ export function MembershipApplicationForm({
     try {
       const supabase = createClient();
 
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: userId,
-        first_name: profile.first_name || null,
-        last_name: profile.last_name || null,
-        email: profile.email,
-        dob: profile.dob || null,
-        phone: profile.phone || null,
-        address_line1: profile.address_line1 || null,
-        address_line2: profile.address_line2 || null,
-        city: profile.city || null,
-        state: profile.state || null,
-        postal_code: profile.postal_code || null,
-        occupation: profile.occupation || null,
-      });
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      const { data: membership, error: membershipError } = await supabase
-        .from("memberships")
-        .insert({
-          primary_user_id: userId,
-          plan_code: planCode,
-          membership_year: currentMembershipYear,
-          status: "submitted",
-          payment_status: "pending",
-          payment_method: paymentMethod,
-          payment_reference: paymentReference || null,
-          submitted_at: new Date().toISOString(),
-        })
-        .select("id")
-        .single();
-
-      if (membershipError) {
-        throw membershipError;
-      }
-
       const householdPayload = visibleHouseholdMembers
         .map((member) => ({
           first_name: member.first_name.trim(),
@@ -176,14 +136,7 @@ export function MembershipApplicationForm({
             member.email ||
             member.phone,
         )
-        .filter(
-          (member) =>
-            member.first_name &&
-            member.last_name &&
-            member.relationship_to_primary,
-        )
         .map((member) => ({
-          membership_id: membership.id,
           ...member,
         }));
 
@@ -199,17 +152,41 @@ export function MembershipApplicationForm({
         }
       }
 
-      if (householdPayload.length > 0) {
-        const { error: householdError } = await supabase
-          .from("household_members")
-          .insert(householdPayload);
+      const { data, error: submissionError } = await supabase.rpc(
+        "submit_membership_application",
+        {
+          p_profile: {
+            first_name: profile.first_name || null,
+            last_name: profile.last_name || null,
+            email: profile.email,
+            dob: profile.dob || null,
+            phone: profile.phone || null,
+            address_line1: profile.address_line1 || null,
+            address_line2: profile.address_line2 || null,
+            city: profile.city || null,
+            state: profile.state || null,
+            postal_code: profile.postal_code || null,
+            occupation: profile.occupation || null,
+          },
+          p_plan_code: planCode,
+          p_membership_year: currentMembershipYear,
+          p_payment_method: paymentMethod,
+          p_payment_reference: paymentReference || null,
+          p_household_members: householdPayload,
+        },
+      );
 
-        if (householdError) {
-          throw householdError;
-        }
+      if (submissionError) {
+        throw submissionError;
       }
 
-      router.push(`/dashboard/membership/${membership.id}`);
+      const membershipId = typeof data === "string" ? data : String(data ?? "");
+
+      if (!membershipId) {
+        throw new Error("Membership submission failed. Please try again.");
+      }
+
+      router.push(`/dashboard/membership/${membershipId}`);
       router.refresh();
     } catch (submissionError: unknown) {
       setError(
@@ -223,7 +200,7 @@ export function MembershipApplicationForm({
   };
 
   return (
-    <Card className="border-slate-200/80 bg-white/90 shadow-sm">
+    <Card className="border-border/80 bg-card/90 shadow-sm">
       <CardHeader>
         <CardTitle>Membership submission</CardTitle>
         <CardDescription>
@@ -295,7 +272,7 @@ export function MembershipApplicationForm({
               </Field>
             </div>
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-950">
+            <div className="rounded-2xl border border-primary/40 bg-accent/55 p-4 text-sm text-foreground">
               {selectedPlan?.name ?? "Selected plan"} allows up to {householdCount} additional member
               {householdCount === 1 ? "" : "s"}.
               {selectedPlan?.code === "single" ? " No extra-member section appears for this plan." : ""}
@@ -304,17 +281,17 @@ export function MembershipApplicationForm({
             {visibleHouseholdMembers.length > 0 ? (
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     Additional household members
                   </h3>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-muted-foreground">
                     Fill in the extra members for your selected plan.
                   </p>
                 </div>
                 <div className="space-y-4">
                   {visibleHouseholdMembers.map((member, index) => (
-                    <div key={`${planCode}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <p className="mb-4 text-sm font-medium text-slate-700">
+                    <div key={`${planCode}-${index}`} className="rounded-2xl border border-border bg-muted p-4">
+                      <p className="mb-4 text-sm font-medium text-foreground/85">
                         Extra member {index + 1}
                       </p>
                       <div className="grid gap-4 md:grid-cols-2">
@@ -347,10 +324,10 @@ export function MembershipApplicationForm({
           <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                   Payment method
                 </h3>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   This is a membership submission with offline/manual payment confirmation.
                 </p>
               </div>
@@ -361,8 +338,8 @@ export function MembershipApplicationForm({
                     key={method.value}
                     className={`flex cursor-pointer items-center justify-between rounded-2xl border px-4 py-3 text-sm transition ${
                       paymentMethod === method.value
-                        ? "border-amber-500 bg-amber-50 text-amber-950"
-                        : "border-slate-200 bg-white"
+                        ? "border-primary bg-accent/60 text-foreground"
+                        : "border-border bg-card"
                     }`}
                   >
                     <span>{method.label}</span>
@@ -384,34 +361,34 @@ export function MembershipApplicationForm({
                 />
               </Field>
 
-              <div className="space-y-3 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                <p className="text-sm font-semibold text-slate-700">Manual payment instructions</p>
+              <div className="space-y-3 rounded-3xl border border-border bg-muted p-5">
+                <p className="text-sm font-semibold text-foreground/85">Manual payment instructions</p>
                 {paymentMethod === "zelle" ? (
                   <>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-muted-foreground">
                       Use the Zelle destination provided by the association. A QR code image will be added here later.
                     </p>
-                    <div className="flex min-h-40 items-center justify-center rounded-2xl border-2 border-dashed border-amber-300 bg-white text-center text-sm text-slate-500">
+                    <div className="flex min-h-40 items-center justify-center rounded-2xl border-2 border-dashed border-primary/45 bg-card text-center text-sm text-muted-foreground">
                       Zelle QR code placeholder
                     </div>
                   </>
                 ) : paymentMethod === "check" ? (
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-muted-foreground">
                     Bring or mail the check to an officer. Include the member name and membership year on the memo line.
                   </p>
                 ) : (
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-muted-foreground">
                     Cash can be handed to a PBIA officer or collected at an event. Keep the receipt or officer note for your records.
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+            <div className="space-y-4 rounded-3xl border border-border bg-card p-5 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Submission summary
               </h3>
-              <div className="space-y-3 text-sm text-slate-600">
+              <div className="space-y-3 text-sm text-muted-foreground">
                 <SummaryRow label="Plan" value={selectedPlan?.name ?? planCode} />
                 <SummaryRow label="Household members" value={`${householdCount} additional section${householdCount === 1 ? "" : "s"}`} />
                 <SummaryRow label="Payment method" value={paymentMethods.find((method) => method.value === paymentMethod)?.label ?? paymentMethod} />
@@ -448,9 +425,9 @@ function Field({
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl bg-slate-50 px-4 py-3">
-      <span className="font-medium text-slate-500">{label}</span>
-      <span className="text-right text-slate-800">{value}</span>
+    <div className="flex items-start justify-between gap-4 rounded-2xl bg-muted px-4 py-3">
+      <span className="font-medium text-muted-foreground">{label}</span>
+      <span className="text-right text-foreground">{value}</span>
     </div>
   );
 }

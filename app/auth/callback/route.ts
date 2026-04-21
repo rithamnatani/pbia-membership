@@ -4,7 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const nextPath = requestUrl.searchParams.get("next") ?? "/dashboard";
+  const rawNextPath = requestUrl.searchParams.get("next") ?? "/dashboard";
+  const nextPath = rawNextPath.startsWith("/") ? rawNextPath : "/dashboard";
 
   if (code) {
     const supabase = await createClient();
@@ -20,6 +21,6 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.redirect(
-    new URL("/login?error=Missing auth code", request.url),
+    new URL("/login?error=Unable to authenticate with Google", request.url),
   );
 }

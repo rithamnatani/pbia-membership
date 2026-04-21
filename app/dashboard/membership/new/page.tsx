@@ -38,7 +38,6 @@ async function NewMembershipContent() {
   return (
     <div className="mx-auto max-w-5xl">
       <MembershipApplicationForm
-        userId={userId}
         initialProfile={profile ?? null}
         plans={plans ?? []}
         currentMembershipYear={getCurrentMembershipYear()}
@@ -49,7 +48,7 @@ async function NewMembershipContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-slate-600">Loading membership form...</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading membership form...</div>}>
       <NewMembershipContent />
     </Suspense>
   );

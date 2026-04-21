@@ -21,10 +21,8 @@ type Membership = {
 
 export function AdminReviewList({
   memberships,
-  officerEmail,
 }: {
   memberships: Membership[];
-  officerEmail: string;
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -36,23 +34,12 @@ export function AdminReviewList({
 
     try {
       const supabase = createClient();
-      const { error: paymentError } = await supabase.from("payment_records").insert({
-        membership_id: membership.id,
-        method: membership.payment_method,
-        amount_cents: null,
-        reference: membership.payment_reference ?? membership.id,
-        notes: "Manual payment recorded during admin review.",
-        received_by: officerEmail,
+      const { error: membershipError } = await supabase.rpc("admin_record_payment", {
+        p_membership_id: membership.id,
+        p_reference: membership.payment_reference ?? membership.id,
+        p_notes: "Manual payment recorded during admin review.",
+        p_mark_active: false,
       });
-
-      if (paymentError) {
-        throw paymentError;
-      }
-
-      const { error: membershipError } = await supabase
-        .from("memberships")
-        .update({ payment_status: "paid" })
-        .eq("id", membership.id);
 
       if (membershipError) {
         throw membershipError;
@@ -76,14 +63,12 @@ export function AdminReviewList({
 
     try {
       const supabase = createClient();
-      const { error: membershipError } = await supabase
-        .from("memberships")
-        .update({
-          status: "active",
-          payment_status: "paid",
-          approved_at: new Date().toISOString(),
-        })
-        .eq("id", membership.id);
+      const { error: membershipError } = await supabase.rpc("admin_record_payment", {
+        p_membership_id: membership.id,
+        p_reference: membership.payment_reference ?? membership.id,
+        p_notes: "Membership activated by officer review.",
+        p_mark_active: true,
+      });
 
       if (membershipError) {
         throw membershipError;
@@ -115,7 +100,7 @@ export function AdminReviewList({
               : membership.membership_plans;
 
             return (
-          <Card key={membership.id} className="border-slate-200/80 bg-white/95 shadow-sm">
+          <Card key={membership.id} className="border-border/80 bg-card/95 shadow-sm">
             <CardHeader>
               <CardTitle>
                 {profile?.first_name ?? "Member"} {profile?.last_name ?? ""}
@@ -124,7 +109,7 @@ export function AdminReviewList({
                 {plan?.name ?? membership.payment_method} · {membership.membership_year}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm text-slate-600">
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
               <div className="grid gap-2 md:grid-cols-2">
                 <Meta label="Member email" value={profile?.email ?? "Unknown"} />
                 <Meta label="Status" value={`${membership.status} / ${membership.payment_status}`} />
@@ -160,9 +145,9 @@ export function AdminReviewList({
 
 function Meta({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-3">
-      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
-      <div className="mt-1 text-slate-800">{value}</div>
+    <div className="rounded-2xl bg-muted px-4 py-3">
+      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+      <div className="mt-1 text-foreground">{value}</div>
     </div>
   );
 }

@@ -36,7 +36,7 @@ async function DashboardContent() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
-      <Card className="border-slate-200/80 bg-white/90 shadow-sm lg:col-span-2">
+      <Card className="border-border/80 bg-card/90 shadow-sm lg:col-span-2">
         <CardHeader>
           <CardDescription>Welcome back</CardDescription>
           <CardTitle>{displayName}</CardTitle>
@@ -48,7 +48,7 @@ async function DashboardContent() {
         </CardContent>
       </Card>
 
-      <Card className="border-slate-200/80 bg-amber-50/80 shadow-sm">
+      <Card className="border-border/80 bg-accent/55 shadow-sm">
         <CardHeader>
           <CardTitle>Next step</CardTitle>
           <CardDescription>
@@ -65,7 +65,7 @@ async function DashboardContent() {
         </CardContent>
       </Card>
 
-      <Card className="border-slate-200/80 bg-white/90 shadow-sm lg:col-span-3">
+      <Card className="border-border/80 bg-card/90 shadow-sm lg:col-span-3">
         <CardHeader>
           <CardTitle>Latest submission</CardTitle>
           <CardDescription>
@@ -81,7 +81,7 @@ async function DashboardContent() {
               <MiniStat label="Payment" value={latestMembership.payment_status} />
             </div>
           ) : (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-muted-foreground">
               No membership has been submitted yet. Start one when you are ready.
             </p>
           )}
@@ -93,7 +93,7 @@ async function DashboardContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-slate-600">Loading dashboard...</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div>}>
       <DashboardContent />
     </Suspense>
   );
@@ -101,18 +101,18 @@ export default function Page() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-4">
-      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
-      <div className="mt-2 text-lg font-semibold text-slate-900">{value}</div>
+    <div className="rounded-2xl bg-muted px-4 py-4">
+      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+      <div className="mt-2 text-lg font-semibold text-foreground">{value}</div>
     </div>
   );
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
-      <div className="mt-2 font-medium text-slate-900">{value}</div>
+    <div className="rounded-2xl border border-border bg-muted px-4 py-4">
+      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+      <div className="mt-2 font-medium text-foreground">{value}</div>
     </div>
   );
 }

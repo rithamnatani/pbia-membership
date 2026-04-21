@@ -32,7 +32,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-slate-600">Loading admin review...</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading admin review...</div>}>
       <AdminContent>{children}</AdminContent>
     </Suspense>
   );

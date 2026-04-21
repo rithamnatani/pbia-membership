@@ -16,11 +16,11 @@ const steps = [
 ];
 export default function Page() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(204,169,114,0.16),_transparent_28%),linear-gradient(180deg,_#fdfaf5_0%,_#fff_42%,_#f7f0e2_100%)] px-4 py-10 text-slate-900 md:px-8">
+    <main className="min-h-screen pbia-page-bg px-4 py-10 text-foreground md:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
-        <header className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white/85 p-4 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
+        <header className="flex flex-col gap-4 rounded-3xl border border-border/80 bg-card/85 p-4 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
               Palm Beach Indian Association
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">
@@ -39,13 +39,13 @@ export default function Page() {
 
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div className="space-y-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">
               Membership submission, not checkout
             </p>
             <h2 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
               The PBIA portal for joining, renewing, and keeping family records up to date.
             </h2>
-            <p className="max-w-2xl text-base leading-7 text-slate-600">
+            <p className="max-w-2xl text-base leading-7 text-muted-foreground">
               Members sign in, complete their profile, choose Single, Couple, or Family, and submit payment details for an officer to review. The association still confirms payments manually, so this flow stays simple while the app gets the right records in place.
             </p>
             <div className="flex flex-wrap gap-3">
@@ -58,16 +58,16 @@ export default function Page() {
             </div>
           </div>
 
-          <Card className="border-slate-200/80 bg-white/90 shadow-sm">
+          <Card className="border-border/80 bg-card/90 shadow-sm">
             <CardHeader>
               <CardTitle>What members do here</CardTitle>
               <CardDescription>
                 The experience is tuned for a community association, not an ecommerce checkout.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-600">
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
               {highlights.map((highlight) => (
-                <div key={highlight} className="rounded-2xl bg-slate-50 px-4 py-3">
+                <div key={highlight} className="rounded-2xl bg-muted px-4 py-3">
                   {highlight}
                 </div>
               ))}
@@ -77,7 +77,7 @@ export default function Page() {
 
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {steps.map((step, index) => (
-            <Card key={step} className="border-slate-200/80 bg-white/90 shadow-sm">
+            <Card key={step} className="border-border/80 bg-card/90 shadow-sm">
               <CardHeader>
                 <CardDescription>Step {index + 1}</CardDescription>
                 <CardTitle>{step}</CardTitle>
@@ -87,7 +87,7 @@ export default function Page() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-3">
-          <Card className="border-slate-200/80 bg-white/90 shadow-sm lg:col-span-2">
+          <Card className="border-border/80 bg-card/90 shadow-sm lg:col-span-2">
             <CardHeader>
               <CardTitle>Membership options</CardTitle>
               <CardDescription>
@@ -100,22 +100,22 @@ export default function Page() {
                 ["Couple", "Exactly one extra member"],
                 ["Family", "Up to six extra members"],
               ].map(([title, body]) => (
-                <div key={title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="font-medium text-slate-900">{title}</div>
-                  <div className="mt-2 text-sm text-slate-600">{body}</div>
+                <div key={title} className="rounded-2xl border border-border bg-muted p-4">
+                  <div className="font-medium text-foreground">{title}</div>
+                  <div className="mt-2 text-sm text-muted-foreground">{body}</div>
                 </div>
               ))}
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200/80 bg-amber-50/80 shadow-sm">
+          <Card className="border-border/80 bg-accent/55 shadow-sm">
             <CardHeader>
               <CardTitle>Payments</CardTitle>
               <CardDescription>
                 Zelle, check, and cash are supported while the association confirms payment manually.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-700">
+            <CardContent className="space-y-3 text-sm text-foreground/85">
               <div>Zelle QR placeholder will appear on the membership page.</div>
               <div>Check payments can include the member name and membership year.</div>
               <div>Cash payments are recorded by an officer after collection.</div>

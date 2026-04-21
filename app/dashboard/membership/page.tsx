@@ -25,15 +25,15 @@ async function MembershipListContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-4 rounded-3xl border border-border/80 bg-card/90 p-6 shadow-sm md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-700">
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">
             Dashboard membership
           </p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight">
             Your membership submissions
           </h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-muted-foreground">
             Review the latest membership request, status, and payment method here.
           </p>
         </div>
@@ -45,7 +45,7 @@ async function MembershipListContent() {
       <div className="grid gap-4">
         {memberships?.length ? (
           memberships.map((membership) => (
-            <Card key={membership.id} className="border-slate-200/80 bg-white/90 shadow-sm">
+            <Card key={membership.id} className="border-border/80 bg-card/90 shadow-sm">
               <CardHeader>
                 <CardDescription>
                   {membership.plan_code} · {membership.membership_year}
@@ -55,7 +55,7 @@ async function MembershipListContent() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex items-center justify-between gap-4">
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-muted-foreground">
                   Payment method: {membership.payment_method}
                 </div>
                 <Button asChild variant="outline">
@@ -65,7 +65,7 @@ async function MembershipListContent() {
             </Card>
           ))
         ) : (
-          <Card className="border-slate-200/80 bg-white/90 shadow-sm">
+          <Card className="border-border/80 bg-card/90 shadow-sm">
             <CardHeader>
               <CardTitle>No membership submissions yet</CardTitle>
               <CardDescription>
@@ -86,7 +86,7 @@ async function MembershipListContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-slate-600">Loading memberships...</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading memberships...</div>}>
       <MembershipListContent />
     </Suspense>
   );

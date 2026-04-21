@@ -36,7 +36,7 @@ async function MembershipDetailContent({
 
   return (
     <div className="space-y-6">
-      <Card className="border-slate-200/80 bg-white/90 shadow-sm">
+      <Card className="border-border/80 bg-card/90 shadow-sm">
         <CardHeader>
           <CardDescription>{membership.plan_code} · {membership.membership_year}</CardDescription>
           <CardTitle>
@@ -53,14 +53,14 @@ async function MembershipDetailContent({
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-slate-200/80 bg-white/90 shadow-sm">
+        <Card className="border-border/80 bg-card/90 shadow-sm">
           <CardHeader>
             <CardTitle>Household members</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-slate-600">
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
             {membership.household_members?.length ? (
               membership.household_members.map((member) => (
-                <div key={`${member.first_name}-${member.last_name}`} className="rounded-2xl bg-slate-50 px-4 py-3">
+                <div key={`${member.first_name}-${member.last_name}`} className="rounded-2xl bg-muted px-4 py-3">
                   {member.first_name} {member.last_name} · {member.relationship_to_primary}
                 </div>
               ))
@@ -70,16 +70,16 @@ async function MembershipDetailContent({
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200/80 bg-white/90 shadow-sm">
+        <Card className="border-border/80 bg-card/90 shadow-sm">
           <CardHeader>
             <CardTitle>Payment records</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-slate-600">
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
             {membership.payment_records?.length ? (
               membership.payment_records.map((record) => (
-                <div key={record.reference} className="rounded-2xl bg-slate-50 px-4 py-3">
+                <div key={record.reference} className="rounded-2xl bg-muted px-4 py-3">
                   <div>{record.method} · {record.reference}</div>
-                  <div className="text-xs text-slate-500">Received by {record.received_by}</div>
+                  <div className="text-xs text-muted-foreground">Received by {record.received_by}</div>
                 </div>
               ))
             ) : (
@@ -98,7 +98,7 @@ export default function Page({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-slate-600">Loading membership...</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading membership...</div>}>
       <MembershipDetailContent params={params} />
     </Suspense>
   );
@@ -106,9 +106,9 @@ export default function Page({
 
 function Meta({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-3">
-      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
-      <div className="mt-1 text-slate-800">{value}</div>
+    <div className="rounded-2xl bg-muted px-4 py-3">
+      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+      <div className="mt-1 text-foreground">{value}</div>
     </div>
   );
 }
