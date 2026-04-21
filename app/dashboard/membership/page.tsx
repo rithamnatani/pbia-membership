@@ -37,9 +37,14 @@ async function MembershipListContent() {
             Review the latest membership request, status, and payment method here.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/membership/new">New membership</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild>
+            <Link href="/dashboard/membership/new">New membership</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/dashboard/membership/renew">Renew membership</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4">

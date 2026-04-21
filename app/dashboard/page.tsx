@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
+import { getRenewalMembershipYear } from "@/lib/membership-year";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -32,6 +33,7 @@ async function DashboardContent() {
   ]);
 
   const latestMembership = memberships?.[0];
+  const renewalYear = getRenewalMembershipYear(latestMembership?.membership_year);
   const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || data.claims.email || "Member";
 
   return (
@@ -52,7 +54,7 @@ async function DashboardContent() {
         <CardHeader>
           <CardTitle>Next step</CardTitle>
           <CardDescription>
-            Finish your profile or start a new membership submission.
+            Finish your profile, review prior memberships, or start renewal.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -60,7 +62,13 @@ async function DashboardContent() {
             <Link href="/dashboard/profile">Update profile</Link>
           </Button>
           <Button asChild className="w-full" variant="outline">
-            <Link href="/dashboard/membership/new">New membership</Link>
+            <Link href="/dashboard/membership/renew">Renew for {renewalYear}</Link>
+          </Button>
+          <Button asChild className="w-full" variant="outline">
+            <Link href="/dashboard/membership/new">Start a fresh application</Link>
+          </Button>
+          <Button asChild className="w-full" variant="outline">
+            <Link href="/dashboard/membership">View membership history</Link>
           </Button>
         </CardContent>
       </Card>

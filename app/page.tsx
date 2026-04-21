@@ -1,19 +1,26 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PbiaLogo } from "@/components/pbia-logo";
 
 const highlights = [
   "Membership submission for new and renewing families",
-  "Google sign-in or magic link authentication",
+  "Google sign-in authentication",
   "Manual payment confirmation through Zelle, check, or cash",
 ];
 
 const steps = [
   "Visit the membership page and review the options.",
-  "Sign in with Google or a magic link.",
+  "Sign in with Google.",
   "Complete your profile and submit the membership for review.",
   "An officer confirms payment and activates the membership.",
 ];
+
+const mission =
+  "To promote Indian cultural activities in South Florida and Palm Beach County.";
+
+const programs =
+  "PBIA celebrates Indian culture through programs such as India Day, a day-long event featuring music, food, and dance from across the Indian subcontinent, shared with residents of Palm Beach and neighboring counties.";
 export default function Page() {
   return (
     <main className="min-h-screen pbia-page-bg px-4 py-10 text-foreground md:px-8">
@@ -26,6 +33,9 @@ export default function Page() {
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">
               Community membership made simple.
             </h1>
+            <div>
+              <PbiaLogo className="max-w-[300px]" priority />
+            </div>
           </div>
           <div className="flex flex-wrap gap-3">
             <Button asChild>
@@ -33,6 +43,9 @@ export default function Page() {
             </Button>
             <Button asChild variant="outline">
               <Link href="/login">Sign in</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/payment-instructions">Payment instructions</Link>
             </Button>
           </div>
         </header>
@@ -87,6 +100,17 @@ export default function Page() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-3">
+          <Card className="border-border/80 bg-card/90 shadow-sm lg:col-span-3">
+            <CardHeader>
+              <CardDescription>Mission and programs</CardDescription>
+              <CardTitle>Indian culture, community, and continuity</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p>{mission}</p>
+              <p>{programs}</p>
+            </CardContent>
+          </Card>
+
           <Card className="border-border/80 bg-card/90 shadow-sm lg:col-span-2">
             <CardHeader>
               <CardTitle>Membership options</CardTitle>
@@ -116,9 +140,12 @@ export default function Page() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-foreground/85">
-              <div>Zelle QR placeholder will appear on the membership page.</div>
+              <div>Zelle QR can be shown on the payment instructions page when the image is available.</div>
               <div>Check payments can include the member name and membership year.</div>
               <div>Cash payments are recorded by an officer after collection.</div>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/payment-instructions">View payment instructions</Link>
+              </Button>
             </CardContent>
           </Card>
         </section>

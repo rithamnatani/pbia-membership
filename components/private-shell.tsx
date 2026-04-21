@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LogoutButton } from "@/components/logout-button";
+import { PbiaLogo } from "@/components/pbia-logo";
 
 export function PrivateShell({
   children,
@@ -13,13 +14,16 @@ export function PrivateShell({
     <main className="min-h-screen pbia-page-bg text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 md:px-8">
         <header className="flex flex-col gap-4 rounded-3xl border border-border/80 bg-card/85 p-4 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
-              PBIA Membership Portal
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-              Palm Beach Indian Association
-            </h1>
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_240px] md:items-center md:gap-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+                PBIA Membership Portal
+              </p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+                Palm Beach Indian Association
+              </h1>
+            </div>
+            <PbiaLogo className="max-w-[240px]" />
           </div>
           <nav className="flex flex-wrap items-center gap-2 text-sm">
             <Button asChild variant="ghost" size="sm">
@@ -30,6 +34,9 @@ export function PrivateShell({
             </Button>
             <Button asChild variant="ghost" size="sm">
               <Link href="/dashboard/membership">Membership</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/payment-instructions">Payment info</Link>
             </Button>
             {isOfficer ? (
               <Button asChild variant="ghost" size="sm">

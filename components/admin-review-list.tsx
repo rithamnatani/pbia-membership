@@ -1,6 +1,5 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
@@ -15,8 +14,14 @@ type Membership = {
   payment_reference: string | null;
   submitted_at: string | null;
   approved_at: string | null;
-  profiles: { first_name: string | null; last_name: string | null; email: string }[] | null;
-  membership_plans: { name: string; code: string }[] | null;
+  profiles:
+    | { first_name: string | null; last_name: string | null; email: string }
+    | { first_name: string | null; last_name: string | null; email: string }[]
+    | null;
+  membership_plans:
+    | { name: string; code: string }
+    | { name: string; code: string }[]
+    | null;
 };
 
 export function AdminReviewList({
@@ -28,22 +33,33 @@ export function AdminReviewList({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const callAdminPaymentApi = async (membership: Membership, markActive: boolean) => {
+    const response = await fetch(`/api/admin/memberships/${membership.id}/payment`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        reference: membership.payment_reference ?? membership.id,
+        notes: markActive
+          ? "Membership activated by officer review."
+          : "Manual payment recorded during admin review.",
+        markActive,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(data?.error || "Unable to process admin payment update.");
+    }
+  };
+
   const markPaid = async (membership: Membership) => {
     setBusyId(membership.id);
     setError(null);
 
     try {
-      const supabase = createClient();
-      const { error: membershipError } = await supabase.rpc("admin_record_payment", {
-        p_membership_id: membership.id,
-        p_reference: membership.payment_reference ?? membership.id,
-        p_notes: "Manual payment recorded during admin review.",
-        p_mark_active: false,
-      });
-
-      if (membershipError) {
-        throw membershipError;
-      }
+      await callAdminPaymentApi(membership, false);
 
       router.refresh();
     } catch (submissionError: unknown) {
@@ -62,17 +78,7 @@ export function AdminReviewList({
     setError(null);
 
     try {
-      const supabase = createClient();
-      const { error: membershipError } = await supabase.rpc("admin_record_payment", {
-        p_membership_id: membership.id,
-        p_reference: membership.payment_reference ?? membership.id,
-        p_notes: "Membership activated by officer review.",
-        p_mark_active: true,
-      });
-
-      if (membershipError) {
-        throw membershipError;
-      }
+      await callAdminPaymentApi(membership, true);
 
       router.refresh();
     } catch (submissionError: unknown) {

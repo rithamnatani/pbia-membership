@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PbiaLogo } from "@/components/pbia-logo";
 
 const membershipOptions = [
   {
@@ -38,6 +39,7 @@ export default function Page() {
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
               Membership landing page
             </p>
+            <PbiaLogo className="max-w-[320px]" priority />
             <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
               Choose the right membership for your household and submit it for manual payment review.
             </h1>
@@ -50,6 +52,9 @@ export default function Page() {
               </Button>
               <Button asChild size="lg" variant="outline">
                 <Link href="/dashboard">Dashboard</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/payment-instructions">Payment instructions</Link>
               </Button>
             </div>
           </div>
@@ -67,9 +72,9 @@ export default function Page() {
                   {method}
                 </div>
               ))}
-              <div className="rounded-2xl border-2 border-dashed border-primary/45 bg-accent/55 p-4 text-center text-muted-foreground">
-                Zelle QR code placeholder
-              </div>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/payment-instructions">View payment details and QR</Link>
+              </Button>
             </CardContent>
           </Card>
         </section>
@@ -94,7 +99,7 @@ export default function Page() {
               <CardTitle>How the process works</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-foreground/85">
-              <div>1. Sign in with Google or a magic link.</div>
+              <div>1. Sign in with Google.</div>
               <div>2. Fill out the primary member profile.</div>
               <div>3. Select Single, Couple, or Family.</div>
               <div>4. Choose Zelle, Check, or Cash and submit the membership.</div>

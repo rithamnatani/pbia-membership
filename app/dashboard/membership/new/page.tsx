@@ -1,13 +1,9 @@
 import { MembershipApplicationForm } from "@/components/membership-application-form";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentMembershipYear } from "@/lib/membership-year";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-
-function getCurrentMembershipYear() {
-  const year = new Date().getFullYear();
-  return `${year}-${String((year + 1) % 100).padStart(2, "0")}`;
-}
 
 async function NewMembershipContent() {
   await connection();
@@ -41,6 +37,7 @@ async function NewMembershipContent() {
         initialProfile={profile ?? null}
         plans={plans ?? []}
         currentMembershipYear={getCurrentMembershipYear()}
+        mode="new"
       />
     </div>
   );

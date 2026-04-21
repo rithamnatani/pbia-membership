@@ -22,12 +22,16 @@ type ProfileDraft = {
   occupation: string;
 };
 
+type InitialProfileDraft = {
+  [K in keyof ProfileDraft]?: string | null;
+};
+
 export function ProfileForm({
   userId,
   initialProfile,
 }: {
   userId: string;
-  initialProfile: Partial<ProfileDraft> | null;
+  initialProfile: InitialProfileDraft | null;
 }) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);

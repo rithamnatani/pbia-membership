@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import type { Database } from "@/database.types";
 
 type Plan = {
-  code: "single" | "couple" | "family" | string;
+  code: Database["public"]["Enums"]["membership_plan_code"];
   name: string;
   max_additional_members: number;
   price_cents: number | null;
@@ -38,6 +40,10 @@ type ProfileDraft = {
   occupation: string;
 };
 
+type InitialProfileDraft = {
+  [K in keyof ProfileDraft]?: string | null;
+};
+
 const paymentMethods = [
   { value: "zelle", label: "Zelle" },
   { value: "check", label: "Check" },
@@ -59,10 +65,14 @@ export function MembershipApplicationForm({
   initialProfile,
   plans,
   currentMembershipYear,
+  initialPlanCode,
+  mode = "new",
 }: {
-  initialProfile: Partial<ProfileDraft> | null;
+  initialProfile: InitialProfileDraft | null;
   plans: Plan[];
   currentMembershipYear: string;
+  initialPlanCode?: Plan["code"];
+  mode?: "new" | "renewal";
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,7 +90,10 @@ export function MembershipApplicationForm({
     postal_code: initialProfile?.postal_code ?? "",
     occupation: initialProfile?.occupation ?? "",
   });
-  const [planCode, setPlanCode] = useState<Plan["code"]>(plans[0]?.code ?? "single");
+  const initialSelectedPlan = plans.some((plan) => plan.code === initialPlanCode)
+    ? initialPlanCode
+    : plans[0]?.code;
+  const [planCode, setPlanCode] = useState<Plan["code"]>(initialSelectedPlan ?? "single");
   const [paymentMethod, setPaymentMethod] = useState<(typeof paymentMethods)[number]["value"]>("zelle");
   const [paymentReference, setPaymentReference] = useState("");
   const [householdMembers, setHouseholdMembers] = useState<HouseholdDraft[]>(
@@ -93,6 +106,7 @@ export function MembershipApplicationForm({
   );
   const householdCount = selectedPlan?.max_additional_members ?? 0;
   const visibleHouseholdMembers = householdMembers.slice(0, householdCount);
+  const isCouplePlan = selectedPlan?.code === "couple";
 
   const updateProfile = (field: keyof ProfileDraft, value: string) => {
     setProfile((current) => ({ ...current, [field]: value }));
@@ -110,10 +124,80 @@ export function MembershipApplicationForm({
     );
   };
 
+  const validateSubmission = () => {
+    const requiredProfileFields: Array<{ field: keyof ProfileDraft; label: string }> = [
+      { field: "first_name", label: "First name" },
+      { field: "last_name", label: "Last name" },
+      { field: "email", label: "Email" },
+      { field: "dob", label: "Date of birth" },
+      { field: "phone", label: "Phone" },
+      { field: "address_line1", label: "Address line 1" },
+      { field: "city", label: "City" },
+      { field: "state", label: "State" },
+      { field: "postal_code", label: "Postal code" },
+    ];
+
+    for (const entry of requiredProfileFields) {
+      if (!String(profile[entry.field] ?? "").trim()) {
+        return `${entry.label} is required.`;
+      }
+    }
+
+    const email = profile.email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return "Enter a valid primary member email address.";
+    }
+
+    if (!selectedPlan?.code) {
+      return "No active membership plan is available. Please contact an officer.";
+    }
+
+    if (selectedPlan.code === "couple") {
+      const member = visibleHouseholdMembers[0];
+      if (!member) {
+        return "Couple memberships require one additional member.";
+      }
+
+      if (!member.first_name.trim() || !member.last_name.trim() || !member.relationship_to_primary.trim() || !member.dob) {
+        return "For Couple memberships, the additional member needs first name, last name, relationship, and date of birth.";
+      }
+    }
+
+    if (selectedPlan.code === "family") {
+      for (const [index, member] of visibleHouseholdMembers.entries()) {
+        const hasAnyValue = Boolean(
+          member.first_name.trim() ||
+          member.last_name.trim() ||
+          member.relationship_to_primary.trim() ||
+          member.dob ||
+          member.email.trim() ||
+          member.phone.trim(),
+        );
+
+        if (hasAnyValue && (!member.first_name.trim() || !member.last_name.trim() || !member.relationship_to_primary.trim() || !member.dob)) {
+          return `Extra member ${index + 1} needs first name, last name, relationship, and date of birth when partially filled.`;
+        }
+
+        if (member.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email.trim())) {
+          return `Extra member ${index + 1} has an invalid email address.`;
+        }
+      }
+    }
+
+    return null;
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
     setError(null);
+
+    const validationError = validateSubmission();
+    if (validationError) {
+      setError(validationError);
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const supabase = createClient();
@@ -124,8 +208,8 @@ export function MembershipApplicationForm({
           last_name: member.last_name.trim(),
           relationship_to_primary: member.relationship_to_primary.trim(),
           dob: member.dob || null,
-          email: member.email || null,
-          phone: member.phone || null,
+          email: member.email.trim() || null,
+          phone: member.phone.trim() || null,
         }))
         .filter(
           (member) =>
@@ -141,13 +225,7 @@ export function MembershipApplicationForm({
         }));
 
       if (selectedPlan.code === "couple") {
-        const hasExtraMember = Boolean(
-          householdPayload[0]?.first_name ||
-            householdPayload[0]?.last_name ||
-            householdPayload[0]?.relationship_to_primary,
-        );
-
-        if (!hasExtraMember) {
+        if (householdPayload.length !== 1) {
           throw new Error("Couple memberships require one additional member.");
         }
       }
@@ -171,7 +249,7 @@ export function MembershipApplicationForm({
           p_plan_code: planCode,
           p_membership_year: currentMembershipYear,
           p_payment_method: paymentMethod,
-          p_payment_reference: paymentReference || null,
+          p_payment_reference: paymentReference || undefined,
           p_household_members: householdPayload,
         },
       );
@@ -202,63 +280,64 @@ export function MembershipApplicationForm({
   return (
     <Card className="border-border/80 bg-card/90 shadow-sm">
       <CardHeader>
-        <CardTitle>Membership submission</CardTitle>
+        <CardTitle>{mode === "renewal" ? "Membership renewal" : "Membership submission"}</CardTitle>
         <CardDescription>
-          Complete the primary profile, select a plan, and submit manual payment
-          details for officer review.
+          Complete the primary profile, select a plan, and submit manual payment details for officer review.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form className="space-y-8" onSubmit={handleSubmit}>
           <section className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="First name">
-                <Input value={profile.first_name} onChange={(event) => updateProfile("first_name", event.target.value)} />
+              <Field label="First name" htmlFor="primary-first-name" required>
+                <Input id="primary-first-name" required value={profile.first_name} onChange={(event) => updateProfile("first_name", event.target.value)} />
               </Field>
-              <Field label="Last name">
-                <Input value={profile.last_name} onChange={(event) => updateProfile("last_name", event.target.value)} />
+              <Field label="Last name" htmlFor="primary-last-name" required>
+                <Input id="primary-last-name" required value={profile.last_name} onChange={(event) => updateProfile("last_name", event.target.value)} />
               </Field>
-              <Field label="Email">
-                <Input type="email" value={profile.email} onChange={(event) => updateProfile("email", event.target.value)} />
+              <Field label="Email" htmlFor="primary-email" required>
+                <Input id="primary-email" required type="email" value={profile.email} onChange={(event) => updateProfile("email", event.target.value)} />
               </Field>
-              <Field label="Date of birth">
-                <Input type="date" value={profile.dob} onChange={(event) => updateProfile("dob", event.target.value)} />
+              <Field label="Date of birth" htmlFor="primary-dob" required>
+                <Input id="primary-dob" required type="date" value={profile.dob} onChange={(event) => updateProfile("dob", event.target.value)} />
               </Field>
-              <Field label="Phone">
-                <Input value={profile.phone} onChange={(event) => updateProfile("phone", event.target.value)} />
+              <Field label="Phone" htmlFor="primary-phone" required>
+                <Input id="primary-phone" required value={profile.phone} onChange={(event) => updateProfile("phone", event.target.value)} />
               </Field>
-              <Field label="Occupation">
-                <Input value={profile.occupation} onChange={(event) => updateProfile("occupation", event.target.value)} />
+              <Field label="Occupation (optional)" htmlFor="primary-occupation">
+                <Input id="primary-occupation" value={profile.occupation} onChange={(event) => updateProfile("occupation", event.target.value)} />
               </Field>
               <div className="md:col-span-2">
-                <Field label="Address line 1">
-                  <Input value={profile.address_line1} onChange={(event) => updateProfile("address_line1", event.target.value)} />
+                <Field label="Address line 1" htmlFor="primary-address-line1" required>
+                  <Input id="primary-address-line1" required value={profile.address_line1} onChange={(event) => updateProfile("address_line1", event.target.value)} />
                 </Field>
               </div>
               <div className="md:col-span-2">
-                <Field label="Address line 2">
-                  <Input value={profile.address_line2} onChange={(event) => updateProfile("address_line2", event.target.value)} />
+                <Field label="Address line 2 (optional)" htmlFor="primary-address-line2">
+                  <Input id="primary-address-line2" value={profile.address_line2} onChange={(event) => updateProfile("address_line2", event.target.value)} />
                 </Field>
               </div>
-              <Field label="City">
-                <Input value={profile.city} onChange={(event) => updateProfile("city", event.target.value)} />
+              <Field label="City" htmlFor="primary-city" required>
+                <Input id="primary-city" required value={profile.city} onChange={(event) => updateProfile("city", event.target.value)} />
               </Field>
-              <Field label="State">
-                <Input value={profile.state} onChange={(event) => updateProfile("state", event.target.value)} />
+              <Field label="State" htmlFor="primary-state" required>
+                <Input id="primary-state" required value={profile.state} onChange={(event) => updateProfile("state", event.target.value)} />
               </Field>
-              <Field label="Postal code">
-                <Input value={profile.postal_code} onChange={(event) => updateProfile("postal_code", event.target.value)} />
+              <Field label="Postal code" htmlFor="primary-postal-code" required>
+                <Input id="primary-postal-code" required value={profile.postal_code} onChange={(event) => updateProfile("postal_code", event.target.value)} />
               </Field>
             </div>
           </section>
 
           <section className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Membership plan">
+              <Field label="Membership plan" htmlFor="membership-plan" required>
                 <select
+                  id="membership-plan"
+                  required
                   className="h-10 rounded-md border border-input bg-background px-3 text-sm shadow-sm"
                   value={planCode}
-                  onChange={(event) => setPlanCode(event.target.value)}
+                  onChange={(event) => setPlanCode(event.target.value as Plan["code"])}
                 >
                   {plans.map((plan) => (
                     <option key={plan.code} value={plan.code}>
@@ -267,8 +346,8 @@ export function MembershipApplicationForm({
                   ))}
                 </select>
               </Field>
-              <Field label="Membership year">
-                <Input value={currentMembershipYear} readOnly />
+              <Field label="Membership year" htmlFor="membership-year" required>
+                <Input id="membership-year" value={currentMembershipYear} readOnly />
               </Field>
             </div>
 
@@ -295,23 +374,44 @@ export function MembershipApplicationForm({
                         Extra member {index + 1}
                       </p>
                       <div className="grid gap-4 md:grid-cols-2">
-                        <Field label="First name">
-                          <Input value={member.first_name} onChange={(event) => updateHouseholdMember(index, "first_name", event.target.value)} />
+                        <Field label="First name" htmlFor={`extra-first-name-${index}`} required={isCouplePlan}>
+                          <Input
+                            id={`extra-first-name-${index}`}
+                            required={isCouplePlan}
+                            value={member.first_name}
+                            onChange={(event) => updateHouseholdMember(index, "first_name", event.target.value)}
+                          />
                         </Field>
-                        <Field label="Last name">
-                          <Input value={member.last_name} onChange={(event) => updateHouseholdMember(index, "last_name", event.target.value)} />
+                        <Field label="Last name" htmlFor={`extra-last-name-${index}`} required={isCouplePlan}>
+                          <Input
+                            id={`extra-last-name-${index}`}
+                            required={isCouplePlan}
+                            value={member.last_name}
+                            onChange={(event) => updateHouseholdMember(index, "last_name", event.target.value)}
+                          />
                         </Field>
-                        <Field label="Relationship to primary">
-                          <Input value={member.relationship_to_primary} onChange={(event) => updateHouseholdMember(index, "relationship_to_primary", event.target.value)} />
+                        <Field label="Relationship to primary" htmlFor={`extra-relationship-${index}`} required={isCouplePlan}>
+                          <Input
+                            id={`extra-relationship-${index}`}
+                            required={isCouplePlan}
+                            value={member.relationship_to_primary}
+                            onChange={(event) => updateHouseholdMember(index, "relationship_to_primary", event.target.value)}
+                          />
                         </Field>
-                        <Field label="Date of birth">
-                          <Input type="date" value={member.dob} onChange={(event) => updateHouseholdMember(index, "dob", event.target.value)} />
+                        <Field label="Date of birth" htmlFor={`extra-dob-${index}`} required={isCouplePlan}>
+                          <Input
+                            id={`extra-dob-${index}`}
+                            required={isCouplePlan}
+                            type="date"
+                            value={member.dob}
+                            onChange={(event) => updateHouseholdMember(index, "dob", event.target.value)}
+                          />
                         </Field>
-                        <Field label="Email">
-                          <Input type="email" value={member.email} onChange={(event) => updateHouseholdMember(index, "email", event.target.value)} />
+                        <Field label="Email" htmlFor={`extra-email-${index}`}>
+                          <Input id={`extra-email-${index}`} type="email" value={member.email} onChange={(event) => updateHouseholdMember(index, "email", event.target.value)} />
                         </Field>
-                        <Field label="Phone">
-                          <Input value={member.phone} onChange={(event) => updateHouseholdMember(index, "phone", event.target.value)} />
+                        <Field label="Phone" htmlFor={`extra-phone-${index}`}>
+                          <Input id={`extra-phone-${index}`} value={member.phone} onChange={(event) => updateHouseholdMember(index, "phone", event.target.value)} />
                         </Field>
                       </div>
                     </div>
@@ -345,6 +445,8 @@ export function MembershipApplicationForm({
                     <span>{method.label}</span>
                     <input
                       type="radio"
+                      name="payment-method"
+                      aria-label={`Pay with ${method.label}`}
                       className="ml-3"
                       checked={paymentMethod === method.value}
                       onChange={() => setPaymentMethod(method.value)}
@@ -353,8 +455,9 @@ export function MembershipApplicationForm({
                 ))}
               </div>
 
-              <Field label="Payment reference or memo">
+              <Field label="Payment reference or memo" htmlFor="payment-reference">
                 <Input
+                  id="payment-reference"
                   placeholder="Optional note for check number or Zelle memo"
                   value={paymentReference}
                   onChange={(event) => setPaymentReference(event.target.value)}
@@ -366,11 +469,11 @@ export function MembershipApplicationForm({
                 {paymentMethod === "zelle" ? (
                   <>
                     <p className="text-sm text-muted-foreground">
-                      Use the Zelle destination provided by the association. A QR code image will be added here later.
+                      Use the Zelle destination provided by the association.
                     </p>
-                    <div className="flex min-h-40 items-center justify-center rounded-2xl border-2 border-dashed border-primary/45 bg-card text-center text-sm text-muted-foreground">
-                      Zelle QR code placeholder
-                    </div>
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href="/payment-instructions">Open Zelle, check, and cash instructions</Link>
+                    </Button>
                   </>
                 ) : paymentMethod === "check" ? (
                   <p className="text-sm text-muted-foreground">
@@ -395,7 +498,9 @@ export function MembershipApplicationForm({
                 <SummaryRow label="Status on submit" value="submitted / pending" />
               </div>
 
-              {error ? <p className="text-sm text-red-600">{error}</p> : null}
+              {error ? (
+                <p role="alert" className="text-sm text-red-600">{error}</p>
+              ) : null}
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Submitting..." : "Submit membership"}
@@ -410,14 +515,21 @@ export function MembershipApplicationForm({
 
 function Field({
   label,
+  htmlFor,
+  required,
   children,
 }: {
   label: string;
+  htmlFor?: string;
+  required?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="grid gap-2">
-      <Label>{label}</Label>
+      <Label htmlFor={htmlFor}>
+        {label}
+        {required ? <span className="ml-1 text-primary">*</span> : null}
+      </Label>
       {children}
     </div>
   );

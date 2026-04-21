@@ -1,4 +1,5 @@
 import { LoginForm } from "@/components/login-form";
+import { PbiaLogo } from "@/components/pbia-logo";
 
 export default function Page() {
   return (
@@ -8,11 +9,12 @@ export default function Page() {
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
             Join or renew
           </p>
+          <PbiaLogo className="mt-4 max-w-[320px]" priority />
           <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
             Sign in to submit or renew your PBIA membership.
           </h1>
           <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
-            Continue with Google or request a magic link. After sign-in, you can
+            Continue with Google. After sign-in, you can
             complete your profile, choose a membership plan, and submit payment
             details for manual review.
           </p>
